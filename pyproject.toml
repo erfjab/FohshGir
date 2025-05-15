@@ -1,0 +1,13 @@
+[project]
+name = "fohshnadebot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "dotenv>=0.9.9",
+    "eiogram>=0.2.5",
+    "fastapi>=0.115.12",
+    "python-decouple>=3.8",
+    "uvicorn>=0.34.2",
+]
