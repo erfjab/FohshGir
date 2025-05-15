@@ -3,6 +3,9 @@ from ._env import (
     TELEGRAM_WEBHOOK_HOST,
     TELEGRAM_WEBHOOK_SECRET_KEY,
     TELEGRAM_CONTECT_ID,
+    UVICORN_SSL_KEYFILE,
+    UVICORN_SSL_CERTFILE,
+    UVICORN_PORT,
 )
 from ._bot import BOT
 from ._texts import Texts
@@ -22,4 +25,7 @@ __all__ = [
     "TELEGRAM_WEBHOOK_HOST",
     "TELEGRAM_WEBHOOK_SECRET_KEY",
     "TELEGRAM_CONTECT_ID",
+    "UVICORN_SSL_KEYFILE",
+    "UVICORN_SSL_CERTFILE",
+    "UVICORN_PORT",
 ]

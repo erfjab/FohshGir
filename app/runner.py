@@ -1,13 +1,20 @@
 from logging import getLogger
 from typing import Dict, Any
 
-import uvicorn
+from uvicorn import Config, Server
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from eiogram.core._dispatcher import Dispatcher
 from eiogram.types._update import Update
 
-from app.config import BOT, TELEGRAM_WEBHOOK_HOST, TELEGRAM_WEBHOOK_SECRET_KEY
+from app.config import (
+    BOT,
+    TELEGRAM_WEBHOOK_HOST,
+    TELEGRAM_WEBHOOK_SECRET_KEY,
+    UVICORN_SSL_KEYFILE,
+    UVICORN_SSL_CERTFILE,
+    UVICORN_PORT,
+)
 from app.routers import setup_routers
 
 app = FastAPI()
@@ -40,6 +47,13 @@ async def setup_application() -> None:
 async def main() -> None:
     """Entry point for the application."""
     await setup_application()
-    config = uvicorn.Config(app, host="127.0.0.1", port=443, log_level="info")
-    server = uvicorn.Server(config)
+    config = Config(
+        app=app,
+        host="0.0.0.0",
+        port=UVICORN_PORT,
+        ssl_certfile=UVICORN_SSL_CERTFILE,
+        ssl_keyfile=UVICORN_SSL_KEYFILE,
+        workers=1,
+    )
+    server = Server(config)
     await server.serve()
