@@ -22,7 +22,7 @@ logger = getLogger(__name__)
 dp = Dispatcher(bot=BOT)
 
 
-@app.post("/webhook")
+@app.post("/api/webhook")
 async def handle_webhook(request: Request) -> JSONResponse:
     """Handle incoming Telegram webhook updates."""
     try:

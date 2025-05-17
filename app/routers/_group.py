@@ -10,16 +10,16 @@ router = Router(name="group")
 @router.message(IsGroup() | IsForum() | IsSuperGroup(), Text())
 async def fohsh_handler(message: Message):
     text = message.context
-    for pattern in FOHSH_PATTERNS:
-        if pattern.search(text):
-            try:
-                await message.delete()
-            except Exception:
-                pass
+    if not any(pattern.search(text) for pattern in FOHSH_PATTERNS):
+        return
 
-            try:
-                await message.mute(until_date=datetime.now() + timedelta(minutes=5))
-            except Exception:
-                pass
-            return
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    try:
+        await message.mute(until_date=datetime.now() + timedelta(minutes=5))
+    except Exception:
+        pass
     return
