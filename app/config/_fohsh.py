@@ -400,15 +400,16 @@ FOHSH = [
 
 
 def normalize_to_regex(word: str) -> str:
-    chars = list(word)
-    pattern_parts = []
-    for i, char in enumerate(chars):
-        if i < len(chars) - 1:
-            pattern_parts.append(f"{re.escape(char)}+[\s\u200c_\\-]*")
+    letters = []
+    for char in word:
+        if char == "\u200c":
+            letters.append(r"(?:\u200c|\W)*")
         else:
-            pattern_parts.append(f"{re.escape(char)}+")
-    pattern = "".join(pattern_parts)
-    return rf"\b{pattern}\b|(?<=\w){pattern}(?=\w)|(?<!\w){pattern}(?=\w)|(?<=\w){pattern}(?!\w)"
+            letters.append(f"{re.escape(char)}[^\wآ-ی\u200c]*")
+    base_pattern = "".join(letters)
+    optional_ending = r"[میّت]*"
+    pattern = base_pattern + optional_ending
+    return rf"(?<!\w){pattern}(?!\w)"
 
 
 FOHSH_PATTERNS = [re.compile(normalize_to_regex(word), re.IGNORECASE) for word in FOHSH]
