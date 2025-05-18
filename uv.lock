@@ -153,14 +153,14 @@ wheels = [
 
 [[package]]
 name = "eiogram"
-version = "0.2.5"
+version = "0.2.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/24/4c1c1d0fea9fbec2e1b61d9a320afe479600b0b758934faa5d6fcdbb3403/eiogram-0.2.5.tar.gz", hash = "sha256:1a6505785cef37cd67f260195f860e510e9a066beb9194fdfeb6429f4c999c1c", size = 17563 }
+sdist = { url = "https://files.pythonhosted.org/packages/93/99/c13bb983be850f81ba3389a6895757e21d6a9503a8f29a5bc5e9097757d4/eiogram-0.2.7.tar.gz", hash = "sha256:2fa5f6a7348bab0d6051e117b6bea348c097da90fe281eb1902ce8202b182606", size = 17893 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/8d/6b19441bdec24d1bfe7e57512150466c0ab6ad92008ee0c8d96a922936c2/eiogram-0.2.5-py3-none-any.whl", hash = "sha256:8ef02fc4eb45b3f745a73ad01b16e5b56addf117800dc971d2783e99a006c90a", size = 28677 },
+    { url = "https://files.pythonhosted.org/packages/24/91/3e198fec993a5a7aa27faa64aa16fe04c706e02e134cab782504b1c62823/eiogram-0.2.7-py3-none-any.whl", hash = "sha256:3721678aab2eb81b2572a08d6d40706112844899875230bdf5674a6408a2f1f8", size = 29546 },
 ]
 
 [[package]]
@@ -192,7 +192,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
-    { name = "eiogram", specifier = ">=0.2.5" },
+    { name = "eiogram", specifier = ">=0.2.7" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "python-decouple", specifier = ">=3.8" },
     { name = "uvicorn", specifier = ">=0.34.2" },

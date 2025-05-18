@@ -5,7 +5,7 @@ from uvicorn import Config, Server
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from eiogram.core._dispatcher import Dispatcher
-from eiogram.types._update import Update
+from eiogram.types import Update, BotCommand
 
 from app.config import (
     BOT,
@@ -37,6 +37,14 @@ async def handle_webhook(request: Request) -> JSONResponse:
 async def setup_application() -> None:
     """Configure application components."""
     dp.include_router(setup_routers())
+    await BOT.set_my_commands(
+        commands=[
+            BotCommand(command="/start", description="شروع/ریستارت بات"),
+            BotCommand(command="/db", description="نمایش دیتابیس"),
+            BotCommand(command="/add", description="برای اضافه کردن کلمه‌"),
+            BotCommand(command="/del", description="برای حذف کردن کلمه‌"),
+        ]
+    )
     await BOT.set_webhook(
         url=TELEGRAM_WEBHOOK_HOST,
         secret_token=TELEGRAM_WEBHOOK_SECRET_KEY,
