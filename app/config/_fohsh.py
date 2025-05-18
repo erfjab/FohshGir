@@ -396,20 +396,20 @@ FOHSH = [
     "کیرفیس",
     "کیراسب",
     "کیرخر",
+    "kir",
+    "kiri",
 ]
 
 
 def normalize_to_regex(word: str) -> str:
-    letters = []
+    pattern_parts = []
     for char in word:
-        if char == "\u200c":
-            letters.append(r"(?:\u200c|\W)*")
-        else:
-            letters.append(f"{re.escape(char)}[^\wآ-ی\u200c]*")
-    base_pattern = "".join(letters)
+        pattern_parts.append(f"{re.escape(char)}(?:[\\W\\u200c]*|)")
+
+    base_pattern = "".join(pattern_parts)
     optional_ending = r"[میّت]*"
-    pattern = base_pattern + optional_ending
-    return rf"(?<!\w){pattern}(?!\w)"
+    full_pattern = base_pattern + optional_ending
+    return rf"(?:(?<!\w){full_pattern}(?!\w)|{''.join(pattern_parts)}"
 
 
 FOHSH_PATTERNS = [re.compile(normalize_to_regex(word), re.IGNORECASE) for word in FOHSH]
