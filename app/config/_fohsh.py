@@ -400,15 +400,15 @@ FOHSH = [
 
 
 def normalize_to_regex(word: str) -> str:
-    letters = []
-    for char in word:
-        letters.append(
-            f"{re.escape(char)}+[\s\u200c.،,_\-*!@#$%^&()\[\]{{}}|;:'\"/\\\\~`٪×÷=+<>?؟!\u200c]*"
-        )
-    base_pattern = "".join(letters)
-    optional_ending = r"[هاانیمشتگ؟!،.]*"
-    pattern = base_pattern + optional_ending
-    return rf"(?<!\w){pattern}(?!\w)|(?<=\w){pattern}(?=\w)|(?<!\w){pattern}(?=\w)|(?<=\w){pattern}(?!\w)"
+    chars = list(word)
+    pattern_parts = []
+    for i, char in enumerate(chars):
+        if i < len(chars) - 1:
+            pattern_parts.append(f"{re.escape(char)}+[\s\u200c_\\-]*")
+        else:
+            pattern_parts.append(f"{re.escape(char)}+")
+    pattern = "".join(pattern_parts)
+    return rf"\b{pattern}\b|(?<=\w){pattern}(?=\w)|(?<!\w){pattern}(?=\w)|(?<=\w){pattern}(?!\w)"
 
 
 FOHSH_PATTERNS = [re.compile(normalize_to_regex(word), re.IGNORECASE) for word in FOHSH]
