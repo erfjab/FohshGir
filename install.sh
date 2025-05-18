@@ -2,14 +2,11 @@
 
 # Basic setup
 SCRIPT_NAME="fohshgir"
-INSTALL_DIR="/opt/erfjab"
+INSTALL_BASE_DIR="/opt/erfjab"
 USERNAME="erfjab"
 DEFAULT_BRANCH="master"
 REPO_URL="https://github.com/${USERNAME}/${SCRIPT_NAME}.git"
-SERVICE_FILE="/etc/systemd/system/${SCRIPT_NAME}.service"
-LOG_FILE="${INSTALL_DIR}/${SCRIPT_NAME}/${SCRIPT_NAME}.log"
-ENV_FILE="${INSTALL_DIR}/${SCRIPT_NAME}/.env"
-ENV_EXAMPLE="${INSTALL_DIR}/${SCRIPT_NAME}/.env.example"
+DEFAULT_INSTANCE="default"
 
 # Colors for output
 RED='\033[0;31m'
@@ -24,13 +21,25 @@ success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# Get current branch if exists
-get_current_branch() {
-    if [ -d "${INSTALL_DIR}/${SCRIPT_NAME}/.git" ]; then
-        git -C "${INSTALL_DIR}/${SCRIPT_NAME}" rev-parse --abbrev-ref HEAD
-    else
-        echo "$DEFAULT_BRANCH"
+# Get instance name
+get_instance_name() {
+    local instance="$1"
+    if [ -z "$instance" ]; then
+        read -p "Enter instance name (default: $DEFAULT_INSTANCE): " instance
+        instance=${instance:-$DEFAULT_INSTANCE}
     fi
+    echo "$instance"
+}
+
+# Get paths for instance
+get_instance_paths() {
+    local instance="$1"
+    echo -e "\n${BLUE}[INSTANCE: ${instance}]${NC}"
+    INSTALL_DIR="${INSTALL_BASE_DIR}/${SCRIPT_NAME}/${instance}"
+    SERVICE_FILE="/etc/systemd/system/${SCRIPT_NAME}_${instance}.service"
+    LOG_FILE="${INSTALL_DIR}/${SCRIPT_NAME}.log"
+    ENV_FILE="${INSTALL_DIR}/.env"
+    ENV_EXAMPLE="${INSTALL_DIR}/.env.example"
 }
 
 # Check if running as root
@@ -50,12 +59,15 @@ install_deps() {
 # Setup installation directory
 setup_dir() {
     log "Setting up installation directory..."
-    [ -d "$INSTALL_DIR" ] || mkdir -p "$INSTALL_DIR"
-    if [ -d "${INSTALL_DIR}/${SCRIPT_NAME}" ]; then
-        warn "Removing old installation..."
-        rm -rf "${INSTALL_DIR}/${SCRIPT_NAME}"
+    if [ -d "${INSTALL_DIR}" ]; then
+        warn "Instance directory already exists"
+        read -p "Overwrite? (y/N) " choice
+        case "$choice" in
+            y|Y) rm -rf "${INSTALL_DIR}" ;;
+            *) exit 0 ;;
+        esac
     fi
-    mkdir -p "${INSTALL_DIR}/${SCRIPT_NAME}"
+    mkdir -p "${INSTALL_DIR}"
     success "Directory ready"
 }
 
@@ -63,9 +75,9 @@ setup_dir() {
 clone_repo() {
     local branch=${1:-$DEFAULT_BRANCH}
     log "Cloning repository (branch: $branch)..."
-    git clone -b "$branch" "$REPO_URL" "${INSTALL_DIR}/${SCRIPT_NAME}" || {
+    git clone -b "$branch" "$REPO_URL" "${INSTALL_DIR}" || {
         warn "Failed to clone branch $branch, trying default branch..."
-        git clone "$REPO_URL" "${INSTALL_DIR}/${SCRIPT_NAME}" || error "Failed to clone repository"
+        git clone "$REPO_URL" "${INSTALL_DIR}" || error "Failed to clone repository"
     }
     success "Repository cloned"
 }
@@ -93,13 +105,13 @@ create_service() {
     log "Creating systemd service..."
     cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=$SCRIPT_NAME Service
+Description=$SCRIPT_NAME Service (Instance: $INSTANCE)
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$INSTALL_DIR/$SCRIPT_NAME
+WorkingDirectory=$INSTALL_DIR
 ExecStart=uv run main.py
 Restart=always
 RestartSec=3
@@ -110,24 +122,27 @@ StandardError=append:$LOG_FILE
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
-    systemctl enable "$SCRIPT_NAME"
+    systemctl enable "$(basename "$SERVICE_FILE")"
     success "Service created"
 }
 
 # Service management
 service_action() {
-    case $1 in
+    local action="$1"
+    local service_name="$(basename "$SERVICE_FILE")"
+    
+    case "$action" in
         start)
-            systemctl start "$SCRIPT_NAME" && success "Service started" || error "Failed to start"
+            systemctl start "$service_name" && success "Service started" || error "Failed to start"
             ;;
         stop)
-            systemctl stop "$SCRIPT_NAME" && success "Service stopped" || warn "Not running"
+            systemctl stop "$service_name" && success "Service stopped" || warn "Not running"
             ;;
         restart)
-            systemctl restart "$SCRIPT_NAME" && success "Service restarted" || error "Failed to restart"
+            systemctl restart "$service_name" && success "Service restarted" || error "Failed to restart"
             ;;
         status)
-            systemctl status "$SCRIPT_NAME"
+            systemctl status "$service_name"
             ;;
         *)
             error "Invalid action"
@@ -165,6 +180,9 @@ script_management() {
 # Main installation with branch support
 install() {
     local branch=${1:-$DEFAULT_BRANCH}
+    INSTANCE=$(get_instance_name "$2")
+    get_instance_paths "$INSTANCE"
+    
     check_root
     install_deps
     setup_dir
@@ -172,79 +190,110 @@ install() {
     setup_env
     create_service
     service_action start
-    script_management install
-    success "Installation complete! (branch: $branch)"
+    success "Installation complete! (Instance: $INSTANCE, Branch: $branch)"
 }
 
-# Update function with branch support - optimized version
+# Update function with branch support
 update() {
-    local branch=${1:-$(get_current_branch)}
+    INSTANCE=$(get_instance_name "$2")
+    get_instance_paths "$INSTANCE"
+    local branch=${1:-$(git -C "$INSTALL_DIR" rev-parse --abbrev-ref HEAD)}
+    
     check_root
-    log "Updating to branch: $branch"    
+    log "Updating instance: $INSTANCE (branch: $branch)"
     service_action stop
-    cd "${INSTALL_DIR}/${SCRIPT_NAME}" || error "Failed to enter installation directory"
+    cd "${INSTALL_DIR}" || error "Failed to enter installation directory"
     git fetch --all || error "Failed to fetch updates"
     git checkout "$branch" && git reset --hard "origin/$branch"
-    success "Successfully updated to branch: $branch"
     service_action start
-    success "Update complete! (branch: $branch)"
+    success "Update complete! (Instance: $INSTANCE, Branch: $branch)"
 }
 
 # Uninstall function
 uninstall() {
+    INSTANCE=$(get_instance_name "$1")
+    get_instance_paths "$INSTANCE"
+    
     check_root
-    log "Starting uninstallation..."
+    log "Uninstalling instance: $INSTANCE"
     service_action stop
-    systemctl disable "$SCRIPT_NAME" 2>/dev/null
+    systemctl disable "$(basename "$SERVICE_FILE")" 2>/dev/null
     rm -f "$SERVICE_FILE"
     systemctl daemon-reload
-    rm -rf "${INSTALL_DIR}/${SCRIPT_NAME}"
-    script_management uninstall
-    success "Uninstallation complete"
+    rm -rf "${INSTALL_DIR}"
+    success "Uninstallation complete for instance: $INSTANCE"
 }
 
 # Show logs
 show_logs() {
+    INSTANCE=$(get_instance_name "$1")
+    get_instance_paths "$INSTANCE"
     [ -f "$LOG_FILE" ] && tail -f "$LOG_FILE" || error "Log file not found"
+}
+
+# List all instances
+list_instances() {
+    log "Available instances:"
+    for dir in "${INSTALL_BASE_DIR}/${SCRIPT_NAME}"/*; do
+        if [ -d "$dir" ]; then
+            instance=$(basename "$dir")
+            service_file="/etc/systemd/system/${SCRIPT_NAME}_${instance}.service"
+            if [ -f "$service_file" ]; then
+                status=$(systemctl is-active "${SCRIPT_NAME}_${instance}.service" 2>/dev/null || echo "inactive")
+                echo -e "${GREEN}✓${NC} $instance (Status: $status)"
+            else
+                echo -e "${YELLOW}⚠${NC} $instance (No service file)"
+            fi
+        fi
+    done
 }
 
 # Help message
 show_help() {
-    echo "Usage: $0 [command] [options]"
+    echo "Usage: $0 [command] [options] [instance]"
     echo "Commands:"
-    echo "  install [branch]    - Install the application (optional: specify branch)"
-    echo "  update [branch]     - Update the application (optional: specify branch)"
-    echo "  uninstall           - Uninstall the application"
-    echo "  start               - Start the service"
-    echo "  stop                - Stop the service"
-    echo "  restart             - Restart the service"
-    echo "  status              - Show service status"
-    echo "  logs                - Show application logs"
-    echo "  script-install      - Install management script"
-    echo "  script-uninstall    - Uninstall management script"
-    echo "  script-update       - Update management script"
-    echo "  help                - Show this help message"
+    echo "  install [branch] [instance] - Install new instance"
+    echo "  update [branch] [instance]  - Update instance"
+    echo "  uninstall [instance]        - Uninstall instance"
+    echo "  start [instance]            - Start instance"
+    echo "  stop [instance]             - Stop instance"
+    echo "  restart [instance]          - Restart instance"
+    echo "  status [instance]           - Show instance status"
+    echo "  logs [instance]             - Show instance logs"
+    echo "  list                        - List all instances"
+    echo "  env [instance]              - Edit .env file"
+    echo "  help                        - Show this help"
 }
 
-# Main entry point with branch support
+# Main entry point
 case "$1" in
     install)
-        install "$2"
+        install "$2" "$3"
         ;;
     update)
-        update "$2"
+        update "$2" "$3"
         ;;
     uninstall)
-        uninstall
+        uninstall "$2"
         ;;
     start|stop|restart|status)
+        INSTANCE=$(get_instance_name "$2")
+        get_instance_paths "$INSTANCE"
         service_action "$1"
         ;;
     logs)
-        show_logs
+        show_logs "$2"
         ;;
     env)
-        nano $ENV_FILE
+        INSTANCE=$(get_instance_name "$2")
+        get_instance_paths "$INSTANCE"
+        nano "$ENV_FILE"
+        ;;
+    list)
+        list_instances
+        ;;
+    help|"")
+        show_help
         ;;
     script-install)
         script_management install
@@ -255,10 +304,7 @@ case "$1" in
     script-update)
         script_management update
         ;;
-    help)
-        show_help
-        ;;
     *)
-        show_help
+        error "Invalid command. Use '$0 help' for usage."
         ;;
 esac
