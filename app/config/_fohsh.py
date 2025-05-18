@@ -405,11 +405,19 @@ FOHSH = [
 
 
 def normalize_to_regex(word: str) -> str:
-    letters = [f"{re.escape(char)}[^\wآ-ی‌]*" for char in word]
-    base_pattern = "".join(letters)
+    pattern_parts = []
+    for char in word:
+        pattern_parts.append(re.escape(char))
+        pattern_parts.append(r"[^\wآ-ی‌]*")
+
+    if pattern_parts:
+        pattern_parts = pattern_parts[:-1]
+
+    base_pattern = "".join(pattern_parts)
     optional_ending = r"[میّت]*"
-    pattern = base_pattern + optional_ending
-    return rf"(?<!\w){pattern}(?!\w)"
+    return (
+        rf"(?:(?<!\w){base_pattern}{optional_ending}(?!\w))|(?<!\w){base_pattern}(?!\w)"
+    )
 
 
 FOHSH_PATTERNS = [re.compile(normalize_to_regex(word), re.IGNORECASE) for word in FOHSH]
