@@ -10,6 +10,8 @@ router = Router(name="group")
 @router.message(IsGroup() | IsForum() | IsSuperGroup(), Text())
 async def fohsh_handler(message: Message):
     text = message.context
+    if not text:
+        return None
     if not any(pattern.search(text) for pattern in FOHSH_PATTERNS):
         return
 
@@ -20,6 +22,7 @@ async def fohsh_handler(message: Message):
 
     try:
         await message.mute(until_date=datetime.now() + timedelta(minutes=5))
-    except Exception:
+    except Exception as e:
+        print(e)
         pass
     return
