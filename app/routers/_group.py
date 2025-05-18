@@ -13,7 +13,8 @@ def clean_text(text: str) -> str:
         return ""
     text = text.replace("\u200c", "")
     text = re.sub(r"ـ+", "", text)
-    text = re.sub(r"(.)\1{2,}", r"\1", text)
+    text = re.sub(r"(?<=\w)\s+(?=\w)", "", text)
+    text = re.sub(r"(.)\1{1,}", r"\1", text)
     return text
 
 
