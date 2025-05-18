@@ -401,11 +401,13 @@ FOHSH = [
 
 
 def normalize_to_regex(word: str) -> str:
-    letters = [f"{re.escape(char)}[^\wآ-ی‌]*" for char in word]
+    letters = []
+    for char in word:
+        letters.append(f"{re.escape(char)}+[^\wآ-ی‌]*")
     base_pattern = "".join(letters)
     optional_ending = r"[میّت]*"
     pattern = base_pattern + optional_ending
-    return rf"(?<!\w){pattern}(?!\w)"
+    return rf"(?<!\w){pattern}(?!\w)|(?<=\w){pattern}(?=\w)"
 
 
 FOHSH_PATTERNS = [re.compile(normalize_to_regex(word), re.IGNORECASE) for word in FOHSH]
