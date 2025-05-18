@@ -397,21 +397,17 @@ FOHSH = [
     "کیراسب",
     "کیرخر",
     "kir",
+    "ک‌یر",
     "kiri",
 ]
 
 
 def normalize_to_regex(word: str) -> str:
-    chars = list(word)
-    pattern_parts = []
-
-    for i, char in enumerate(chars):
-        if i < len(chars) - 1:
-            pattern_parts.append(f"{re.escape(char)}[^آ-یa-zA-Z0-9]*")
-        else:
-            pattern_parts.append(f"{re.escape(char)}")
-    pattern = "".join(pattern_parts)
-    return rf"\b{pattern}\b|{pattern}"
+    letters = [f"{re.escape(char)}[^\wآ-ی‌]*" for char in word]
+    base_pattern = "".join(letters)
+    optional_ending = r"[میّت]*"
+    pattern = base_pattern + optional_ending
+    return rf"(?<!\w){pattern}(?!\w)"
 
 
 FOHSH_PATTERNS = [re.compile(normalize_to_regex(word), re.IGNORECASE) for word in FOHSH]

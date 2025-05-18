@@ -12,6 +12,7 @@ async def fohsh_handler(message: Message):
     text = message.context
     if not text:
         return None
+    text = text.replace("\u200c", "")
     if not any(pattern.search(text) for pattern in FOHSH_PATTERNS):
         return
 
