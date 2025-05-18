@@ -25,7 +25,6 @@ async def fohsh_handler(message: Message):
         await message.mute(
             until_date=int((datetime.now() + timedelta(minutes=5)).timestamp())
         )
-    except Exception as e:
-        print(e)
+    except Exception:
         pass
     return
